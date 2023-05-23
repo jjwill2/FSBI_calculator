@@ -23,12 +23,14 @@ source("user_input_for_FSBI_calculator.R")
 # read in data------------------------------------------------------------------
 
 macro_data <-read_excel(paste0("./fsbi_calculator_inputs/", filename), 
-                               col_names = TRUE, sheet = macro.data.tab)
+                               col_names = TRUE, sheet = macro.data.tab,
+                        col_types = c("text", "text", "text", "text", "text"))
 str(macro_data)
 
 
 taxa_fsbi <-read_excel(paste0("./fsbi_calculator_inputs/", filename), 
-                       col_names = TRUE, sheet = taxa.fsbi.tab)
+                       col_names = TRUE, sheet = taxa.fsbi.tab, 
+                       na = "NA")
 str(taxa_fsbi)
 
 relyea_fsbi <-read_excel(paste0("./fsbi_calculator_inputs/", filename), 
@@ -61,13 +63,19 @@ duplicates <-
 # Step 3 - calculate FSBI
 ################################################################################
 
+# substitute 0 for cases where taxa_FSBI is NA, indicating no taxa level score
+merged2$taxa_FSBI[is.na(merged2$taxa_FSBI)] <-0
+
+str(merged2)
 
 calculated <-
   merged2 %>%
+  mutate(fsbi_taxa = ifelse(taxa_FSBI > 0, 1, 0)) %>%
   filter(!is.na(taxa_FSBI)) %>% 
   distinct(.keep_all = TRUE) %>%
   group_by(agency, project, site, sample) %>%
-  summarize(n_FSBI_taxa = n(),
+  summarize(n_taxa = n(),
+            n_FSBI_taxa = sum(fsbi_taxa),
             sample_FSBI = sum(taxa_FSBI))
   
   
